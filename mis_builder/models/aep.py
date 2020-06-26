@@ -69,6 +69,7 @@ class AccountingExpressionProcessor(object):
 
     def __init__(self, company):
         self.company = company
+        self.env = company.env
         self.dp = company.currency_id.decimal_places
         # before done_parsing: {(domain, mode): set(account_codes)}
         # after done_parsing: {(domain, mode): list(account_ids)}
@@ -113,6 +114,10 @@ class AccountingExpressionProcessor(object):
 
         Returns field, mode, [account codes], (domain expression).
         """
+        domain_eval_context = {
+          "ref" : self.env.ref,
+          "user": self.env.user,
+        }
         field, mode, account_codes, domain = mo.groups()
         if not mode:
             mode = self.MODE_VARIATION
@@ -127,7 +132,7 @@ class AccountingExpressionProcessor(object):
         else:
             account_codes = [None]  # None means we want all accounts
         domain = domain or '[]'
-        domain = tuple(safe_eval(domain))
+        domain = tuple(safe_eval(domain, locals_dict=domain_eval_context, nocopy=True))
         return field, mode, account_codes, domain
 
     def parse_expr(self, expr):
